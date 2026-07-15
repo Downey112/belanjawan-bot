@@ -1,9 +1,30 @@
 # Belanjawan Bot
 
+**Live demo:** [belanjawan-bot-ut48esxousutb5xbp8ehqz.streamlit.app](https://belanjawan-bot-ut48esxousutb5xbp8ehqz.streamlit.app/)
+
+![Belanjawan Bot answering a question about the SARA subsidy programme, with page citations to budget_speech.pdf and economic_outlook.pdf](screenshot.png)
+
 A RAG (Retrieval-Augmented Generation) system that answers questions about
 Malaysia's Budget 2026 (Belanjawan 2026), grounded in the actual official
 documents from the Ministry of Finance — with page-level citations, not
 hallucinated answers.
+
+## Example interaction
+
+**Q: What is SARA and who benefits from it?**
+
+> Based on [budget_speech.pdf, page 126], SARA has a take up rate of nearly 98
+> percent and is used to purchase basic goods such as food, medicines, and
+> school supplies. Additionally, [budget_speech.pdf, page 184] mentions an
+> increase in Bantuan Sara Hidup for 4,000 KEMAS contract pensioners from 300
+> ringgit to 500 ringgit a month. [economic_outlook.pdf, page 32] also mentions
+> that the SARA programme benefits 5.4 million recipients and an additional RM2
+> billion was allocated in July 2025 for the Penghargaan SARA RM100 One-off
+> initiative, benefitting 22 million Malaysians aged 18 and above.
+
+Every claim traces back to a specific document and page — that's the actual
+point of RAG over a plain chatbot: verifiable answers, not confident-sounding
+guesses.
 
 ## Why this project
 
