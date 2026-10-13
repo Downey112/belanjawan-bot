@@ -1,7 +1,7 @@
 # Belanjawan Bot 🇲🇾🤖
 
 [![Live Demo](https://img.shields.io/badge/Streamlit-Live_Demo-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://belanjawan-bot-ut48esxousutb5xbp8ehqz.streamlit.app/)
-[![LLM: Llama 3.3 70B](https://img.shields.io/badge/LLM-Llama_3.3_70B_(Groq)-F55036?style=flat)](https://groq.com)
+[![LLM: GPT-OSS 120B](https://img.shields.io/badge/LLM-GPT--OSS_120B_(Groq)-F55036?style=flat)](https://groq.com)
 [![Vector DB: Chroma](https://img.shields.io/badge/Vector_DB-ChromaDB-black?style=flat)](https://trychroma.com)
 [![Embeddings](https://img.shields.io/badge/Embeddings-sentence--transformers-yellow?style=flat)](https://sbert.net)
 
@@ -22,7 +22,7 @@ flowchart TD
     C --> D["Chroma Vector Database<br/>(Embedded index & semantic store)"]
     E["User Question"] --> F["Top-k Semantic Retrieval<br/>(Relevant document chunks)"]
     D --> F
-    F --> G["Groq API<br/>(Llama 3.3 70B Versatile)"]
+    F --> G["Groq API<br/>(GPT-OSS 120B)"]
     G --> H["Streamlit Chat Interface<br/>(Strict page-level citations)"]
 ```
 
@@ -38,7 +38,7 @@ flowchart TD
 ## 🏗️ Technical Highlights
 
 * **Citation Integrity:** Page numbers are preserved as first-class metadata across chunking and vector storage, allowing every generated claim to cite exact source pages.
-* **Zero-Cost Inference:** Utilizes lightweight local embeddings (`sentence-transformers`) paired with Groq's high-speed LPU inference running Llama 3.3 70B.
+* **Zero-Cost Inference:** Utilizes lightweight local embeddings (`sentence-transformers`) paired with Groq's high-speed LPU inference running GPT-OSS 120B.
 * **Grounded Guardrails:** System prompts enforce an explicit refusal state if user inquiries exceed document scope, eliminating hallucinations.
 
 ---

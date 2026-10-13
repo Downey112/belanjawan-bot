@@ -25,7 +25,7 @@ from sentence_transformers import SentenceTransformer
 CHROMA_DIR = pathlib.Path(__file__).parent / "chroma_db"
 COLLECTION_NAME = "belanjawan_2026"
 TOP_K = 5
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are Belanjawan Bot, an assistant that answers questions about \
 Malaysia's Budget 2026 (Belanjawan 2026) using ONLY the provided document excerpts. \
