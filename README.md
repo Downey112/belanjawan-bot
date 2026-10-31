@@ -71,3 +71,9 @@ export GROQ_API_KEY="gsk_..."  # Windows: $env:GROQ_API_KEY="gsk_..."
 
 streamlit run app.py
 ```
+
+---
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).
