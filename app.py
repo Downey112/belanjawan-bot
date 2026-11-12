@@ -62,6 +62,8 @@ def main():
             min_score = generate.MIN_RERANK_SCORE if mode == "hybrid_rerank" else None
             result = generate.answer(question, hits, client=client, min_score=min_score)
         st.markdown(result.answer)
+        if result.refused:
+            st.caption(f"Refused: {result.reason}")
         with st.expander("Sources"):
             for c in result.citations:
                 st.markdown(f"- {c.doc}, page {c.page}")
