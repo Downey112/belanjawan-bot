@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.cache
+.claude
+data
+chroma_db
+tests
+eval
+**/__pycache__
+.pytest_cache
+.streamlit
