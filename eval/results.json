@@ -1,0 +1,61 @@
+{
+  "n_questions": 34,
+  "modes": {
+    "dense": {
+      "hit@1": 0.324,
+      "recall@5": 0.794,
+      "MRR@10": 0.506,
+      "ms_per_query": 30.2
+    },
+    "bm25": {
+      "hit@1": 0.559,
+      "recall@5": 0.912,
+      "MRR@10": 0.732,
+      "ms_per_query": 21.4
+    },
+    "hybrid": {
+      "hit@1": 0.471,
+      "recall@5": 0.941,
+      "MRR@10": 0.668,
+      "ms_per_query": 24.2
+    },
+    "hybrid_rerank": {
+      "hit@1": 0.559,
+      "recall@5": 0.971,
+      "MRR@10": 0.749,
+      "ms_per_query": 104.0
+    }
+  },
+  "misses": {
+    "dense": [
+      "q07",
+      "q08",
+      "q10",
+      "q12",
+      "q14",
+      "q20",
+      "q33"
+    ],
+    "bm25": [
+      "q01",
+      "q02",
+      "q08"
+    ],
+    "hybrid": [
+      "q08",
+      "q10"
+    ],
+    "hybrid_rerank": [
+      "q08"
+    ]
+  },
+  "refusal": {
+    "threshold": 0.005,
+    "in_scope_best_score_min": 0.0079,
+    "in_scope_best_score_median": 0.9996,
+    "out_of_scope_best_score_max": 0.9982,
+    "in_scope_wrongly_refused": 0,
+    "out_of_scope_let_through": 2,
+    "n_out_of_scope": 6
+  }
+}
