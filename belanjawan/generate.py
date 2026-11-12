@@ -21,7 +21,9 @@ Budget 2027 using ONLY the document excerpts provided.
 - If the excerpts do not answer the question, reply with exactly: {OUT_OF_SCOPE}
 - Keep answers short and factual. Keep Malaysian terms (e.g. SARA, STR, KWSP) as written."""
 
-CITATION = re.compile(r"\[([\w.\-]+\.pdf)\s+p\.?\s*(\d+)\]")
+# Matches the file name followed by a page number, whatever the brackets or separators:
+# [a.pdf p.12], 【a.pdf p.12】, (a.pdf, page 12), a.pdf p. 12-13 (takes the first page).
+CITATION = re.compile(r"([\w.\-]+\.pdf)\W{0,3}(?:p\.?|pp\.?|page|pg\.?)\s*(\d+)", re.IGNORECASE)
 
 
 class Citation(BaseModel):
@@ -33,6 +35,8 @@ class Answer(BaseModel):
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     refused: bool = False
+    # Why it was refused: "no_hits", "low_score", "model_out_of_scope", "no_valid_citation", "empty_reply"
+    reason: str | None = None
 
 
 def build_context(hits: list[Hit]) -> str:
@@ -57,8 +61,10 @@ def valid_citations(text: str, hits: list[Hit]) -> list[Citation]:
 def answer(question: str, hits: list[Hit], client=None, model: str = DEFAULT_MODEL,
            min_score: float | None = None) -> Answer:
     """Answer `question` from `hits`. Pass min_score to refuse when the best hit is too weak."""
-    if not hits or (min_score is not None and max(h.score for h in hits) < min_score):
-        return Answer(answer=REFUSAL, refused=True)
+    if not hits:
+        return Answer(answer=REFUSAL, refused=True, reason="no_hits")
+    if min_score is not None and max(h.score for h in hits) < min_score:
+        return Answer(answer=REFUSAL, refused=True, reason="low_score")
 
     if client is None:
         from groq import Groq
@@ -73,9 +79,11 @@ def answer(question: str, hits: list[Hit], client=None, model: str = DEFAULT_MOD
         ],
     )
     text = (response.choices[0].message.content or "").strip()
-    if OUT_OF_SCOPE in text:
-        return Answer(answer=REFUSAL, refused=True)
+    if not text:
+        return Answer(answer=REFUSAL, refused=True, reason="empty_reply")
+    if text.startswith(OUT_OF_SCOPE) or text == OUT_OF_SCOPE:
+        return Answer(answer=REFUSAL, refused=True, reason="model_out_of_scope")
     citations = valid_citations(text, hits)
     if not citations:  # an answer that cites nothing we retrieved is not grounded
-        return Answer(answer=REFUSAL, refused=True)
+        return Answer(answer=REFUSAL, refused=True, reason="no_valid_citation")
     return Answer(answer=text, citations=citations)
