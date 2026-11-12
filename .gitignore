@@ -3,17 +3,19 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.pytest_cache/
 
-# Secrets — never commit real API keys
+# Secrets: never commit real API keys
 .streamlit/secrets.toml
+.env
+
+# Downloaded model files (fastembed / flashrank)
+.cache/
+
+# Source PDFs are re-downloadable from the MOF Budget portal (`python ingest.py`).
+# The built index/ IS committed, so Streamlit Cloud and Docker can serve it without ingesting.
+data/
 
 # Editors / OS
 .vscode/
 .DS_Store
-
-# Intentionally NOT ignored: data/ (downloaded PDFs) and chroma_db/ (the
-# built vector index) — committing both means Streamlit Community Cloud can
-# serve the app immediately with no separate build/ingestion step at deploy
-# time. Fine at this project's small scale (a handful of PDFs); if the
-# corpus grows much larger, revisit this and move ingestion into a build
-# step instead of committing a large binary index.

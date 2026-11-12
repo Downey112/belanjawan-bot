@@ -1,127 +1,73 @@
-"""
-Belanjawan Bot — ask questions about Malaysia's Budget 2026 and get answers
-grounded in the actual government documents, with page citations.
+"""Belanjawan Bot: ask about Malaysia's Budget 2026 and 2027, get answers with page citations.
 
 Local dev:
     pip install -r requirements.txt
-    python download_docs.py
-    python ingest.py
+    python ingest.py                 # only needed if index/ is missing
     export GROQ_API_KEY="gsk_..."
     streamlit run app.py
 
-On Streamlit Community Cloud: set GROQ_API_KEY in the app's Secrets instead
-of an environment variable (Settings -> Secrets, as a TOML entry:
-GROQ_API_KEY = "gsk_...").
+On Streamlit Community Cloud, set GROQ_API_KEY in the app's Secrets.
 """
 
 import os
-import pathlib
 
-import chromadb
 import streamlit as st
 from groq import Groq
-from sentence_transformers import SentenceTransformer
 
-CHROMA_DIR = pathlib.Path(__file__).parent / "chroma_db"
-COLLECTION_NAME = "belanjawan_2026"
-TOP_K = 5
-GROQ_MODEL = "openai/gpt-oss-120b"
-
-SYSTEM_PROMPT = """You are Belanjawan Bot, an assistant that answers questions about \
-Malaysia's Budget 2026 (Belanjawan 2026) using ONLY the provided document excerpts. \
-If the excerpts don't contain enough information to answer, say so directly — don't \
-guess or use outside knowledge. Always mention which document/page an answer is \
-based on when possible. Keep answers concise and factual."""
+from belanjawan import generate
+from belanjawan.index import load_index
+from belanjawan.retrieve import MODES, search
 
 
 @st.cache_resource
-def load_embedding_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+def get_index():
+    return load_index()
 
 
-@st.cache_resource
-def load_chroma_collection():
-    if not CHROMA_DIR.exists():
-        st.error("No Chroma database found — run `python ingest.py` first (locally, "
-                 "before deploying) and commit the chroma_db/ folder, or wire up a "
-                 "build step that runs ingestion before the app starts.")
-        st.stop()
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return client.get_collection(COLLECTION_NAME)
-
-
-def get_groq_client() -> Groq:
+def get_client() -> Groq:
     api_key = st.secrets.get("GROQ_API_KEY", os.environ.get("GROQ_API_KEY"))
     if not api_key:
-        st.error("GROQ_API_KEY not set — add it to Streamlit secrets or your local "
-                 "environment. Get a free key at console.groq.com (no card required).")
+        st.error("GROQ_API_KEY not set. Add it to Streamlit secrets or your environment "
+                 "(free key at console.groq.com).")
         st.stop()
     return Groq(api_key=api_key)
-
-
-def retrieve(query: str, model, collection, k: int = TOP_K):
-    query_embedding = model.encode([query]).tolist()
-    results = collection.query(query_embeddings=query_embedding, n_results=k)
-    chunks = results["documents"][0]
-    metadatas = results["metadatas"][0]
-    return list(zip(chunks, metadatas))
-
-
-def build_context(retrieved: list[tuple[str, dict]]) -> str:
-    parts = []
-    for text, meta in retrieved:
-        parts.append(f"[Source: {meta['source']}, page {meta['page']}]\n{text}")
-    return "\n\n---\n\n".join(parts)
 
 
 def main():
     st.set_page_config(page_title="Belanjawan Bot", page_icon="🇲🇾")
     st.title("🇲🇾 Belanjawan Bot")
-    st.caption("Ask questions about Malaysia's Budget 2026 — answers are grounded in "
-               "the official Ministry of Finance documents, with page citations.")
+    st.caption("Answers about Malaysia's Budget 2026 and 2027, grounded in the official Ministry "
+               "of Finance documents, with page citations.")
 
-    embedding_model = load_embedding_model()
-    collection = load_chroma_collection()
-    groq_client = get_groq_client()
+    with st.sidebar:
+        year = st.selectbox("Budget year", ["Both", 2027, 2026])
+        mode = st.selectbox("Search mode", MODES, index=MODES.index("hybrid_rerank"),
+                            help="hybrid_rerank = keyword + vector search, fused, then reranked. "
+                                 "See EVAL.md for how each mode scores.")
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
+    index, client = get_index(), get_client()
+    st.session_state.setdefault("messages", [])
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        st.chat_message(msg["role"]).markdown(msg["content"])
 
-    question = st.chat_input("e.g. What tax changes were announced for 2026?")
-    if question:
-        st.session_state.messages.append({"role": "user", "content": question})
-        with st.chat_message("user"):
-            st.markdown(question)
+    question = st.chat_input("e.g. How much is the SARA cash aid in 2027?")
+    if not question:
+        return
+    st.session_state.messages.append({"role": "user", "content": question})
+    st.chat_message("user").markdown(question)
 
-        with st.chat_message("assistant"):
-            with st.spinner("Searching the Budget documents..."):
-                retrieved = retrieve(question, embedding_model, collection)
-                context = build_context(retrieved)
-
-            response = groq_client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Document excerpts:\n\n{context}\n\n"
-                                                 f"Question: {question}"},
-                ],
-            )
-            answer = response.choices[0].message.content
-            st.markdown(answer)
-
-            with st.expander("Sources used"):
-                seen = set()
-                for _, meta in retrieved:
-                    key = (meta["source"], meta["page"])
-                    if key not in seen:
-                        st.markdown(f"- {meta['source']}, page {meta['page']}")
-                        seen.add(key)
-
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+    with st.chat_message("assistant"):
+        with st.spinner("Searching the Budget documents..."):
+            hits = search(index, question, mode, k=5, year=None if year == "Both" else year)
+            min_score = generate.MIN_RERANK_SCORE if mode == "hybrid_rerank" else None
+            result = generate.answer(question, hits, client=client, min_score=min_score)
+        st.markdown(result.answer)
+        with st.expander("Sources"):
+            for c in result.citations:
+                st.markdown(f"- {c.doc}, page {c.page}")
+            if not result.citations:
+                st.markdown("_No source cited._")
+    st.session_state.messages.append({"role": "assistant", "content": result.answer})
 
 
 if __name__ == "__main__":
