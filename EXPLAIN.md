@@ -46,6 +46,14 @@ them**: they are left to the LLM's OUT_OF_SCOPE rule and the citation check.
 - `valid_citations()` keeps only citations matching a retrieved (document, page); invented ones
   are dropped.
 - An answer with no valid citation becomes a refusal. So does the token `OUT_OF_SCOPE`.
+- `Answer.reason` records which rule fired, and the app shows it.
+
+**A real bug this caught (issue #15):** after deploying, the live app refused "How much SARA aid do
+STR recipients get in 2027?" although search ranked the right page first. The model
+(gpt-oss-120b) writes citations as `【budget2027_speech.pdf p.25】`, not `[...]`, so the strict
+pattern found no citation and the guardrail refused a correct answer. Fix: match the file name and
+page whatever the brackets, test six real formats, and log the refusal reason. Lesson: a guardrail
+that is too strict fails silently as "the bot is unhelpful", so record *why* it fired.
 
 ## 5. Evaluation
 
