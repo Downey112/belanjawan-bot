@@ -11,7 +11,7 @@ answer the question, the bot says so instead of guessing.
 🔗 **Live app:** [belanjawan-bot.streamlit.app](https://belanjawan-bot-ut48esxousutb5xbp8ehqz.streamlit.app/)
 · **Eval results:** [EVAL.md](EVAL.md) · **Design decisions:** [EXPLAIN.md](EXPLAIN.md)
 
-![Belanjawan Bot answering questions with citations](screenshot.png)
+![Belanjawan Bot answering questions with citations](screenshot.jpg)
 
 ## Results
 
